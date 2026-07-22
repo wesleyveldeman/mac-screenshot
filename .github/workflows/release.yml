@@ -3,6 +3,11 @@ name: Release
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version tag to create and release (e.g. v1.0.0)"
+        required: true
 
 permissions:
   contents: write
@@ -10,20 +15,24 @@ permissions:
 jobs:
   release:
     runs-on: macos-latest
+    env:
+      RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.version || github.ref_name }}
     steps:
       - uses: actions/checkout@v5
 
       - name: Stamp version from tag
         run: |
-          version="${GITHUB_REF_NAME#v}"
+          version="${RELEASE_TAG#v}"
           /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $version" Support/Info.plist
           /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $version" Support/Info.plist
 
       - name: Build and zip app bundle
         run: |
           make zip
-          mv dist/LightSnap.zip "dist/LightSnap-${GITHUB_REF_NAME}.zip"
+          mv dist/LightSnap.zip "dist/LightSnap-${RELEASE_TAG}.zip"
 
+      # For workflow_dispatch runs the tag does not exist yet; gh creates it
+      # at the built commit via --target. On tag pushes --target is ignored.
       - name: Publish GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -38,8 +47,9 @@ jobs:
           or approve the app via System Settings → Privacy & Security → "Open Anyway". See the README for producing notarized builds with a Developer ID.
           EOF
           )
-          gh release create "$GITHUB_REF_NAME" \
-            "dist/LightSnap-${GITHUB_REF_NAME}.zip" \
-            --title "LightSnap $GITHUB_REF_NAME" \
+          gh release create "$RELEASE_TAG" \
+            "dist/LightSnap-${RELEASE_TAG}.zip" \
+            --target "$GITHUB_SHA" \
+            --title "LightSnap $RELEASE_TAG" \
             --generate-notes \
             --notes "$notes"
