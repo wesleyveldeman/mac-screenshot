@@ -110,6 +110,21 @@ quick-and-dirty to correct:
    signature also stops macOS from re-asking for the Screen Recording
    permission after every rebuild.
 
+## Publishing a release
+
+Tag a version and push the tag — the Release workflow builds the universal
+bundle and publishes `LightSnap-vX.Y.Z.zip` as a GitHub release, with the
+app's version stamped from the tag:
+
+```sh
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+The release zip is ad-hoc signed unless you build and upload one yourself
+with `make release SIGN_IDENTITY=…`, so downloaders need the one-time
+Gatekeeper approval described above.
+
 ## Usage
 
 | Action | How |
