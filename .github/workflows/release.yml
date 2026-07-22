@@ -18,7 +18,18 @@ jobs:
     env:
       RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.version || github.ref_name }}
     steps:
+      # The dispatch input feeds file paths and argv below — reject anything
+      # that is not a plain vX.Y.Z tag before using it.
+      - name: Validate version tag
+        run: |
+          if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "error: version must look like v1.2.3, got '$RELEASE_TAG'" >&2
+            exit 1
+          fi
+
       - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
 
       - name: Stamp version from tag
         run: |
@@ -37,18 +48,20 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          notes=$(cat <<'EOF'
+          shasum -a 256 "dist/LightSnap-${RELEASE_TAG}.zip" | tee "dist/LightSnap-${RELEASE_TAG}.zip.sha256"
+          checksum=$(cut -d' ' -f1 < "dist/LightSnap-${RELEASE_TAG}.zip.sha256")
+          notes=$(cat <<EOF
           Universal (Apple Silicon + Intel) build for macOS 14 or later.
 
-          **First launch of a downloaded copy:** this zip is ad-hoc signed, so Gatekeeper will warn. Either run
+          **First launch of a downloaded copy:** this zip is ad-hoc signed, so Gatekeeper will warn. Open the app once, then approve it via System Settings → Privacy & Security → "Open Anyway". See the README for producing notarized builds with a Developer ID.
 
-          `xattr -dr com.apple.quarantine LightSnap.app`
-
-          or approve the app via System Settings → Privacy & Security → "Open Anyway". See the README for producing notarized builds with a Developer ID.
+          SHA-256 of \`LightSnap-${RELEASE_TAG}.zip\`:
+          \`$checksum\`
           EOF
           )
           gh release create "$RELEASE_TAG" \
             "dist/LightSnap-${RELEASE_TAG}.zip" \
+            "dist/LightSnap-${RELEASE_TAG}.zip.sha256" \
             --target "$GITHUB_SHA" \
             --title "LightSnap $RELEASE_TAG" \
             --generate-notes \

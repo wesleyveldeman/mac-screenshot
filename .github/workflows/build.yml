@@ -4,11 +4,16 @@ on:
   push:
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
 
       # Universal (arm64 + x86_64) bundle, zipped with ditto so the
       # signature and executable permissions survive the artifact round-trip.
