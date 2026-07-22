@@ -63,12 +63,16 @@ final class EditorToolbar: NSView {
 
         stack.addArrangedSubview(makeButton(symbol: "xmark", tooltip: "Cancel (Esc)", action: #selector(cancelClicked)))
 
+        stack.translatesAutoresizingMaskIntoConstraints = false
         addSubview(stack)
-        stack.layoutSubtreeIfNeeded()
-        let size = stack.fittingSize
-        stack.frame = CGRect(origin: .zero, size: size)
-        stack.autoresizingMask = [.width, .height]
-        setFrameSize(size)
+        NSLayoutConstraint.activate([
+            stack.leadingAnchor.constraint(equalTo: leadingAnchor),
+            stack.trailingAnchor.constraint(equalTo: trailingAnchor),
+            stack.topAnchor.constraint(equalTo: topAnchor),
+            stack.bottomAnchor.constraint(equalTo: bottomAnchor),
+        ])
+        layoutSubtreeIfNeeded()
+        setFrameSize(fittingSize)
 
         refreshTools()
         refreshColors()
