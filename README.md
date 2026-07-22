@@ -71,9 +71,44 @@ launch LightSnap requests it; enable **LightSnap** under
 **System Settings → Privacy & Security → Screen Recording** and relaunch the
 app if needed.
 
-> Note: the Makefile signs the app ad-hoc. If you rebuild, macOS may ask for
-> the permission again because the code signature changed. Sign with a real
-> developer identity to avoid this.
+> Note: the Makefile signs the app ad-hoc by default. If you rebuild, macOS
+> may ask for the permission again because the code signature changed. Sign
+> with a real developer identity (see below) to avoid this.
+
+### macOS blocks the app ("unknown developer")
+
+Gatekeeper only screens apps that carry the quarantine flag, which macOS puts
+on anything downloaded from the internet — a CI artifact, a zip from a
+browser, an AirDropped copy. An app you build yourself with `make run` starts
+without any prompt. For a downloaded copy you have three options, from
+quick-and-dirty to correct:
+
+1. **Remove the quarantine flag** (your own machine only):
+
+   ```sh
+   xattr -dr com.apple.quarantine /path/to/LightSnap.app
+   ```
+
+2. **Approve it once in the UI** — macOS 15 and later: try to open the app,
+   then System Settings → Privacy & Security → scroll down → **Open Anyway**.
+   macOS 14 and earlier: right-click the app → Open → Open.
+
+3. **Sign and notarize properly** (needed to distribute to other people).
+   This requires a paid Apple Developer membership:
+
+   ```sh
+   # one-time: store notarization credentials in the keychain
+   xcrun notarytool store-credentials lightsnap \
+     --apple-id you@example.com --team-id TEAMID99 \
+     --password <app-specific-password>
+
+   # sign with hardened runtime, notarize, staple, and produce dist/LightSnap.zip
+   make release SIGN_IDENTITY="Developer ID Application: Your Name (TEAMID99)"
+   ```
+
+   The resulting zip opens cleanly on any Mac. A stable Developer ID
+   signature also stops macOS from re-asking for the Screen Recording
+   permission after every rebuild.
 
 ## Usage
 

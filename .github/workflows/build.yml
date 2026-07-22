@@ -10,11 +10,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build app bundle
-        run: make app ARCH_FLAGS=
+      # Universal (arm64 + x86_64) bundle, zipped with ditto so the
+      # signature and executable permissions survive the artifact round-trip.
+      - name: Build and zip app bundle
+        run: make zip
 
       - name: Upload app artifact
         uses: actions/upload-artifact@v4
         with:
-          name: LightSnap.app
-          path: dist/
+          name: LightSnap
+          path: dist/LightSnap.zip
