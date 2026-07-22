@@ -115,8 +115,17 @@ final class SelectionView: NSView {
         state = .selected
         selectionRect = bounds
         dragMode = .none
-        layoutToolbar()
-        toolbar.isHidden = false
+        switch Prefs.postSelectionAction {
+        case .edit:
+            layoutToolbar()
+            toolbar.isHidden = false
+        case .copy:
+            performCopy()
+            return
+        case .save:
+            performQuickSave()
+            return
+        }
         window?.invalidateCursorRects(for: self)
         needsDisplay = true
     }
@@ -324,8 +333,23 @@ final class SelectionView: NSView {
                 selectionRect = .zero
             } else {
                 state = .selected
-                layoutToolbar()
-                toolbar.isHidden = false
+                // Holding ⌥ on release always opens the editor, so annotating
+                // stays available even with auto-copy/save enabled.
+                var action = Prefs.postSelectionAction
+                if event.modifierFlags.contains(.option) {
+                    action = .edit
+                }
+                switch action {
+                case .edit:
+                    layoutToolbar()
+                    toolbar.isHidden = false
+                case .copy:
+                    performCopy()
+                    return
+                case .save:
+                    performQuickSave()
+                    return
+                }
             }
             window?.invalidateCursorRects(for: self)
 

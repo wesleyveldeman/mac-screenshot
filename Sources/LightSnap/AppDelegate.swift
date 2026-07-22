@@ -1,15 +1,13 @@
 import AppKit
-import Carbon.HIToolbox
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem?
-    private let hotkeys = HotkeyManager()
     private var preferencesWindow: PreferencesWindowController?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         setupStatusItem()
-        registerHotkeys()
+        HotkeyCenter.shared.reload()
 
         // Prime the Screen Recording permission prompt on first launch so the
         // app shows up in System Settings before the user tries to capture.
@@ -60,13 +58,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func buildMenu() -> NSMenu {
         let menu = NSMenu()
 
-        let area = NSMenuItem(title: "Capture Area", action: #selector(captureArea), keyEquivalent: "9")
-        area.keyEquivalentModifierMask = [.command, .shift]
+        let area = NSMenuItem(title: "Capture Area", action: #selector(captureArea), keyEquivalent: "")
+        applyKeyEquivalent(Prefs.areaHotkey, to: area)
         area.target = self
         menu.addItem(area)
 
-        let full = NSMenuItem(title: "Capture Full Screen", action: #selector(captureFullScreen), keyEquivalent: "9")
-        full.keyEquivalentModifierMask = [.command, .shift, .option]
+        let full = NSMenuItem(title: "Capture Full Screen", action: #selector(captureFullScreen), keyEquivalent: "")
+        applyKeyEquivalent(Prefs.fullScreenHotkey, to: full)
         full.target = self
         menu.addItem(full)
 
@@ -117,18 +115,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         preferencesWindow?.show()
     }
 
-    // MARK: - Global hotkeys
-
-    private func registerHotkeys() {
-        hotkeys.register(keyCode: UInt32(kVK_ANSI_9), modifiers: UInt32(cmdKey | shiftKey)) {
-            Task { @MainActor in
-                CaptureController.shared.beginCapture(mode: .area)
-            }
-        }
-        hotkeys.register(keyCode: UInt32(kVK_ANSI_9), modifiers: UInt32(cmdKey | shiftKey | optionKey)) {
-            Task { @MainActor in
-                CaptureController.shared.beginCapture(mode: .fullScreen)
-            }
-        }
+    private func applyKeyEquivalent(_ hotkey: Hotkey, to item: NSMenuItem) {
+        guard let keyEquivalent = hotkey.menuKeyEquivalent else { return }
+        item.keyEquivalent = keyEquivalent
+        item.keyEquivalentModifierMask = hotkey.cocoaModifiers
     }
 }

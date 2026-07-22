@@ -60,6 +60,14 @@ final class HotkeyManager {
         return true
     }
 
+    func unregisterAll() {
+        for ref in hotKeyRefs {
+            UnregisterEventHotKey(ref)
+        }
+        hotKeyRefs.removeAll()
+        handlers.removeAll()
+    }
+
     deinit {
         for ref in hotKeyRefs {
             UnregisterEventHotKey(ref)

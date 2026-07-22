@@ -10,8 +10,9 @@ macOS 15 Sequoia, and macOS 26 Tahoe.
 - **Status bar icon** — LightSnap lives in the menu bar. **Left-click the icon to
   start an area capture**; right-click for the menu (full-screen capture,
   settings, quit).
-- **Global hotkeys** — `⇧⌘9` capture area, `⌥⇧⌘9` capture full screen. Works
-  from any app, no Accessibility permission needed.
+- **Global hotkeys** — `⇧⌘9` capture area, `⌥⇧⌘9` capture full screen by
+  default, both configurable in Settings (click the shortcut field and type a
+  new combination). Works from any app, no Accessibility permission needed.
 - **Lightshot-style area selection** — the screen freezes, you drag to select.
   The selection shows live pixel dimensions and can be moved and resized with
   8 drag handles afterwards.
@@ -27,7 +28,11 @@ macOS 15 Sequoia, and macOS 26 Tahoe.
   instant save to your screenshots folder (`⇧⌘S`), print (`⌘P`).
 - **Multi-display support** — every screen gets an overlay; select on whichever
   one you want. Retina-exact output (full pixel density, correct DPI metadata).
-- **Settings** — save folder, PNG/JPEG, include cursor, launch at login.
+- **Settings** — save folder, PNG/JPEG, include cursor, launch at login,
+  custom shortcuts, and an "After selection" action: show the editing tools
+  (default), copy to clipboard immediately, or save to your folder immediately
+  for a zero-keystroke workflow. With auto-copy/save enabled, hold `⌥` while
+  releasing the selection to open the editor for that one capture.
 
 Like Lightshot, everything happens on a frozen snapshot of your screen, so
 menus, tooltips, and other transient UI can be captured too.
@@ -74,8 +79,9 @@ app if needed.
 
 | Action | How |
 | --- | --- |
-| Capture an area | Click the menu bar icon, or `⇧⌘9` |
-| Capture full screen | Right-click icon → Capture Full Screen, or `⌥⇧⌘9` |
+| Capture an area | Click the menu bar icon, or `⇧⌘9` (configurable) |
+| Capture full screen | Right-click icon → Capture Full Screen, or `⌥⇧⌘9` (configurable) |
+| Open editor despite auto-copy/save | Hold `⌥` while releasing the selection |
 | Select whole screen while capturing | `⌘A` |
 | Move / resize selection | Drag inside it (with Select tool) / drag the handles |
 | Annotate | Pick a tool + color in the toolbar, draw inside the selection |
@@ -94,6 +100,8 @@ Sources/LightSnap/
   main.swift               entry point (agent app, no Dock icon)
   AppDelegate.swift        status bar item, menu, hotkey registration
   HotkeyManager.swift      Carbon global hotkeys (no Accessibility permission)
+  Hotkey.swift             hotkey model + HotkeyCenter registration hub
+  HotkeyRecorderField.swift  click-to-record shortcut field for Settings
   ScreenCapturer.swift     ScreenCaptureKit screenshots of every display
   CaptureController.swift  capture session lifecycle
   OverlayWindow.swift      borderless full-screen overlay window
@@ -109,8 +117,9 @@ Makefile                   universal build + .app bundling + ad-hoc signing
 
 ## Troubleshooting
 
-- **Hotkeys don't fire** — another app may already own `⇧⌘9`. Change the other
-  app's shortcut, or adjust the key codes in `AppDelegate.registerHotkeys()`.
+- **Hotkeys don't fire** — another app may already own the combination
+  (Settings shows a warning when registration fails). Record a different
+  shortcut in LightSnap's Settings, or change the other app's.
 - **Black screenshots / permission alert loops** — remove LightSnap from the
   Screen Recording list in System Settings, re-add it, and relaunch.
 - **"Launch at login" fails** — that feature requires running from the built
