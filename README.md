@@ -1,0 +1,117 @@
+# LightSnap
+
+A Lightshot-style screenshot tool for modern macOS, built natively in Swift/AppKit.
+Runs natively on Apple Silicon and Intel (universal binary) and uses the modern
+ScreenCaptureKit API — no deprecated capture calls, works on macOS 14 Sonoma,
+macOS 15 Sequoia, and macOS 26 Tahoe.
+
+## Features
+
+- **Status bar icon** — LightSnap lives in the menu bar. **Left-click the icon to
+  start an area capture**; right-click for the menu (full-screen capture,
+  settings, quit).
+- **Global hotkeys** — `⇧⌘9` capture area, `⌥⇧⌘9` capture full screen. Works
+  from any app, no Accessibility permission needed.
+- **Lightshot-style area selection** — the screen freezes, you drag to select.
+  The selection shows live pixel dimensions and can be moved and resized with
+  8 drag handles afterwards.
+- **Edit in place** — annotate the selection before exporting:
+  - Pen (freehand, smoothed)
+  - Line
+  - Arrow
+  - Rectangle
+  - Marker/highlighter (translucent, multiply blend)
+  - Text
+  - 8-color palette, undo/redo
+- **Output** — copy to clipboard (`⌘C` or `Enter`), save with dialog (`⌘S`),
+  instant save to your screenshots folder (`⇧⌘S`), print (`⌘P`).
+- **Multi-display support** — every screen gets an overlay; select on whichever
+  one you want. Retina-exact output (full pixel density, correct DPI metadata).
+- **Settings** — save folder, PNG/JPEG, include cursor, launch at login.
+
+Like Lightshot, everything happens on a frozen snapshot of your screen, so
+menus, tooltips, and other transient UI can be captured too.
+
+> Lightshot's cloud features (upload to prnt.sc and Google reverse-image
+> search) depend on Lightshot's servers and are intentionally not included —
+> LightSnap is fully offline and never sends your screenshots anywhere.
+
+## Requirements
+
+- macOS 14 (Sonoma) or later — including Apple Silicon Macs
+- Xcode 15+ command line tools to build (`xcode-select --install` is not
+  enough for universal builds; install Xcode from the App Store)
+
+## Build & run
+
+```sh
+make run        # builds dist/LightSnap.app (universal) and opens it
+```
+
+Other targets:
+
+```sh
+make app              # just build the .app bundle
+make ARCH_FLAGS=      # build for the host architecture only
+make clean
+```
+
+The app appears as a camera icon in the menu bar. There is no Dock icon
+(it's a background agent app).
+
+### First run: Screen Recording permission
+
+macOS requires Screen Recording permission for any screenshot app. On first
+launch LightSnap requests it; enable **LightSnap** under
+**System Settings → Privacy & Security → Screen Recording** and relaunch the
+app if needed.
+
+> Note: the Makefile signs the app ad-hoc. If you rebuild, macOS may ask for
+> the permission again because the code signature changed. Sign with a real
+> developer identity to avoid this.
+
+## Usage
+
+| Action | How |
+| --- | --- |
+| Capture an area | Click the menu bar icon, or `⇧⌘9` |
+| Capture full screen | Right-click icon → Capture Full Screen, or `⌥⇧⌘9` |
+| Select whole screen while capturing | `⌘A` |
+| Move / resize selection | Drag inside it (with Select tool) / drag the handles |
+| Annotate | Pick a tool + color in the toolbar, draw inside the selection |
+| Add text | Text tool, click in the selection, type, press Enter |
+| Undo / redo | `⌘Z` / `⇧⌘Z` |
+| Copy to clipboard | `Enter`, `⌘C`, or toolbar button |
+| Save with dialog | `⌘S` |
+| Save instantly to folder | `⇧⌘S` |
+| Print | `⌘P` |
+| Cancel | `Esc` |
+
+## Project layout
+
+```
+Sources/LightSnap/
+  main.swift               entry point (agent app, no Dock icon)
+  AppDelegate.swift        status bar item, menu, hotkey registration
+  HotkeyManager.swift      Carbon global hotkeys (no Accessibility permission)
+  ScreenCapturer.swift     ScreenCaptureKit screenshots of every display
+  CaptureController.swift  capture session lifecycle
+  OverlayWindow.swift      borderless full-screen overlay window
+  SelectionView.swift      selection, editing, keyboard handling, export
+  Annotations.swift        annotation model + shared renderer (screen & export)
+  EditorToolbar.swift      floating tool/color/action bar
+  OutputActions.swift      clipboard, save dialog, quick save, print
+  Preferences.swift        UserDefaults-backed settings
+  PreferencesWindow.swift  settings window
+Support/Info.plist         app bundle metadata (LSUIElement agent app)
+Makefile                   universal build + .app bundling + ad-hoc signing
+```
+
+## Troubleshooting
+
+- **Hotkeys don't fire** — another app may already own `⇧⌘9`. Change the other
+  app's shortcut, or adjust the key codes in `AppDelegate.registerHotkeys()`.
+- **Black screenshots / permission alert loops** — remove LightSnap from the
+  Screen Recording list in System Settings, re-add it, and relaunch.
+- **"Launch at login" fails** — that feature requires running from the built
+  `.app` bundle (`make run`), not the bare `swift run` executable.

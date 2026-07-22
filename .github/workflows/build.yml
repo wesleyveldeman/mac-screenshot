@@ -1,0 +1,20 @@
+name: Build
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build app bundle
+        run: make app ARCH_FLAGS=
+
+      - name: Upload app artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: LightSnap.app
+          path: dist/
