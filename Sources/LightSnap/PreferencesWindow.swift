@@ -34,8 +34,13 @@ final class PreferencesWindowController: NSWindowController, NSWindowDelegate {
     }
 
     // Ending recording re-registers the global hotkeys, so never leave a
-    // recorder focused when the window goes away.
+    // recorder focused when the window goes away or loses key status —
+    // otherwise the capture hotkeys stay suspended indefinitely.
     func windowWillClose(_ notification: Notification) {
+        window?.makeFirstResponder(nil)
+    }
+
+    func windowDidResignKey(_ notification: Notification) {
         window?.makeFirstResponder(nil)
     }
 

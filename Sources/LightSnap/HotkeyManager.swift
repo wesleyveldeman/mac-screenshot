@@ -33,6 +33,9 @@ final class HotkeyManager {
                     &hotKeyID
                 )
                 guard status == noErr else { return status }
+                guard hotKeyID.signature == HotkeyManager.signature else {
+                    return OSStatus(eventNotHandledErr)
+                }
                 let manager = Unmanaged<HotkeyManager>.fromOpaque(userData).takeUnretainedValue()
                 manager.handlers[hotKeyID.id]?()
                 return noErr

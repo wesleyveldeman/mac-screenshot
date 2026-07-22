@@ -22,7 +22,6 @@ enum OutputActions {
         panel.begin { response in
             guard response == .OK, let url = panel.url else { return }
             write(image, to: url, format: format)
-            Prefs.saveDirectory = url.deletingLastPathComponent()
         }
     }
 
@@ -32,7 +31,15 @@ enum OutputActions {
         let format = Prefs.imageFormat
         let directory = Prefs.saveDirectory
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        let url = directory.appendingPathComponent(defaultFilename(fileExtension: format.fileExtension))
+        // Timestamps have one-second granularity; suffix a counter so rapid
+        // captures never overwrite each other.
+        let baseName = (defaultFilename(fileExtension: format.fileExtension) as NSString).deletingPathExtension
+        var url = directory.appendingPathComponent("\(baseName).\(format.fileExtension)")
+        var counter = 2
+        while FileManager.default.fileExists(atPath: url.path) {
+            url = directory.appendingPathComponent("\(baseName) (\(counter)).\(format.fileExtension)")
+            counter += 1
+        }
         write(image, to: url, format: format)
         return url
     }

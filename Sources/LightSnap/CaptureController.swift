@@ -24,8 +24,13 @@ final class CaptureController {
 
     func beginCapture(mode: CaptureMode) {
         guard !isCapturing else { return }
-        guard ensurePermission() else { return }
+        // Claim the flag before the permission alert runs modally, or a
+        // second hotkey press during the alert stacks another one.
         isCapturing = true
+        guard ensurePermission() else {
+            isCapturing = false
+            return
+        }
         Task { @MainActor in
             do {
                 let captures = try await ScreenCapturer.captureAllDisplays()
@@ -85,13 +90,22 @@ final class CaptureController {
     }
 
     private func dismissOverlays() {
-        for session in sessions {
-            session.view.teardown()
-            session.window.orderOut(nil)
-            session.window.contentView = nil
-        }
+        let dismissed = sessions
         sessions.removeAll()
         isCapturing = false
+        for session in dismissed {
+            session.view.teardown()
+            session.window.makeFirstResponder(nil)
+            session.window.orderOut(nil)
+        }
+        // A toolbar button action or key handler inside one of these views may
+        // still be on the call stack; release the view hierarchy on the next
+        // runloop turn instead of out from under it.
+        DispatchQueue.main.async {
+            for session in dismissed {
+                session.window.contentView = nil
+            }
+        }
     }
 
     private func ensurePermission() -> Bool {

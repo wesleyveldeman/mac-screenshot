@@ -112,13 +112,19 @@ final class SelectionView: NSView {
     func selectEntireScreen() {
         controller.selectionWillBegin(on: self)
         commitTextField()
+        // ⌘A inside an active editing session only expands the selection —
+        // re-applying the post-selection action here would instantly
+        // copy/save and kill the session mid-edit.
+        let alreadyEditing = state == .selected && !toolbar.isHidden
         state = .selected
         selectionRect = bounds
         dragMode = .none
-        switch Prefs.postSelectionAction {
+        let action: PostSelectionAction = alreadyEditing ? .edit : Prefs.postSelectionAction
+        switch action {
         case .edit:
             layoutToolbar()
             toolbar.isHidden = false
+            toolbar.refreshUndoRedo()
         case .copy:
             performCopy()
             return
@@ -139,6 +145,7 @@ final class SelectionView: NSView {
         activeAnnotation = nil
         dragMode = .none
         toolbar.isHidden = true
+        toolbar.refreshUndoRedo()
         window?.invalidateCursorRects(for: self)
         needsDisplay = true
     }
@@ -358,6 +365,9 @@ final class SelectionView: NSView {
                 commitActiveAnnotation()
             }
             dragMode = .none
+            // A move/resize drag relocates the selection and toolbar; their
+            // cursor rects must follow.
+            window?.invalidateCursorRects(for: self)
         }
         needsDisplay = true
     }
@@ -670,7 +680,10 @@ final class SelectionView: NSView {
             context.translateBy(x: 0, y: CGFloat(pixelHeight))
             context.scaleBy(x: 1, y: -1)
             context.scaleBy(x: scale, y: scale)
-            context.translateBy(x: -selectionRect.origin.x, y: -selectionRect.origin.y)
+            // Translate by the integral crop origin, not the fractional
+            // selection origin, so annotations land on the exact pixels they
+            // covered on screen.
+            context.translateBy(x: -(pixelRect.origin.x / scale), y: -(pixelRect.origin.y / scale))
 
             let graphics = NSGraphicsContext(cgContext: context, flipped: true)
             let previous = NSGraphicsContext.current
@@ -681,7 +694,7 @@ final class SelectionView: NSView {
         }
 
         guard let output = context.makeImage() else { return nil }
-        return NSImage(cgImage: output, size: selectionRect.size)
+        return NSImage(cgImage: output, size: CGSize(width: pixelRect.width / scale, height: pixelRect.height / scale))
     }
 
     func performCopy() {

@@ -38,16 +38,26 @@ final class HotkeyRecorderField: NSView {
 
     override var acceptsFirstResponder: Bool { true }
 
+    private var clickActivated = false
+
     override func mouseDown(with event: NSEvent) {
         if isRecording {
             window?.makeFirstResponder(nil)
+        } else if window?.firstResponder === self {
+            isRecording = true
         } else {
+            clickActivated = true
             window?.makeFirstResponder(self)
         }
     }
 
     override func becomeFirstResponder() -> Bool {
-        isRecording = true
+        // Only a deliberate click starts recording — keyboard focus cycling
+        // must not silently suspend the global hotkeys.
+        if clickActivated {
+            clickActivated = false
+            isRecording = true
+        }
         return true
     }
 

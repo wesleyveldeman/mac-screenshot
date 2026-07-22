@@ -83,15 +83,16 @@ browser, an AirDropped copy. An app you build yourself with `make run` starts
 without any prompt. For a downloaded copy you have three options, from
 quick-and-dirty to correct:
 
-1. **Remove the quarantine flag** (your own machine only):
+1. **Approve it once in the UI** (preferred) — macOS 15 and later: try to
+   open the app, then System Settings → Privacy & Security → scroll down →
+   **Open Anyway**. macOS 14 and earlier: right-click the app → Open → Open.
+
+2. **Remove the quarantine flag** (your own machine only, when you trust the
+   copy — release zips publish a SHA-256 checksum you can verify first):
 
    ```sh
    xattr -dr com.apple.quarantine /path/to/LightSnap.app
    ```
-
-2. **Approve it once in the UI** — macOS 15 and later: try to open the app,
-   then System Settings → Privacy & Security → scroll down → **Open Anyway**.
-   macOS 14 and earlier: right-click the app → Open → Open.
 
 3. **Sign and notarize properly** (needed to distribute to other people).
    This requires a paid Apple Developer membership:
